@@ -61,16 +61,24 @@ support-ticket-saas/
 │   ├── database.py
 │   ├── models.py
 │   ├── schemas.py
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── .env
 │
 ├── FrontendReact/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   └── Ticket.jsx
 │   │   ├── api.js
 │   │   ├── App.jsx
-│   │   └── App.css
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── public/
 │   ├── package.json
-│   └── package-lock.json
+│   ├── package-lock.json
+│   └── vite.config.js
 │
 ├── .gitignore
 └── README.md

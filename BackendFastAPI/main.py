@@ -198,7 +198,36 @@ def update_ticket_status(
     db.commit()
     db.refresh(ticket)
     return ticket
+@app.delete("/api/users/{user_id}", status_code=204)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    user = db.query(User).filter(User.id == user_id).first()
 
-@app.get("/test-db")
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    # Prevent an admin from accidentally deleting their own account.
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot delete your own admin account"
+        )
+
+    # Delete tickets belonging to the user first.
+    db.query(Ticket).filter(Ticket.user_id == user.id).delete(
+        synchronize_session=False
+    )
+
+    db.delete(user)
+    db.commit()
+
+    return None
+@app.get("/")
 def test_db(db: Session = Depends(get_db)):
-    return {"message": "Database connection works"}
+    return {"message": "works"}
