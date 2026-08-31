@@ -2,7 +2,7 @@
 
 A small SaaS-style support ticket application built with **React, FastAPI, PostgreSQL, and Google Gemini**.
 
-Users can register, log in, create support tickets, and view their own tickets. Admins can view all tickets and update ticket status. New tickets are automatically categorized by topic and urgency using Gemini.
+Users can register, log in, create up to 10 support tickets, and view their own tickets. Admins can view all tickets and update ticket status. New tickets are automatically categorized by topic and urgency using Gemini.
 
 ## Features
 
@@ -289,7 +289,7 @@ This prevents User A from accessing User B's tickets even if they manually modif
   "user_id": 1
 }
 ```
-
+ 
 ---
 
 ## Challenge & Solution

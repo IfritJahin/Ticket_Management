@@ -34,7 +34,7 @@ function Tickets({
             })
 
             setNotice(
-                'Ticket submitted and automatically triaged.'
+                'Ticket submitted.'
             )
 
             await loadTickets()

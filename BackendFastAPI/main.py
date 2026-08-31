@@ -148,11 +148,25 @@ def create_ticket(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Regular users can create a maximum of 10 tickets.
+    # Admins are not restricted by this limit.
+    if current_user.role != "admin":
+        ticket_count = db.query(Ticket).filter(
+            Ticket.user_id == current_user.id
+        ).count()
+
+        if ticket_count >= 10:
+            raise HTTPException(
+                status_code=400,
+                detail="You can have a maximum of 10 tickets."
+            )
+
+    # AI automatically categorizes the new ticket.
     triage = categorize_ticket(data.subject, data.message)
 
-    print("SUBJECT:", data.subject)
-    print("MESSAGE:", data.message)
-    print("AI TRIAGE:", triage)
+    # print("SUBJECT:", data.subject)
+    # print("MESSAGE:", data.message)
+    # print("AI TRIAGE:", triage)
 
     ticket = Ticket(
         user_id=current_user.id,
