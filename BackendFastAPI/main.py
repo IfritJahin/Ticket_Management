@@ -149,6 +149,11 @@ def create_ticket(
     db: Session = Depends(get_db),
 ):
     triage = categorize_ticket(data.subject, data.message)
+
+    print("SUBJECT:", data.subject)
+    print("MESSAGE:", data.message)
+    print("AI TRIAGE:", triage)
+
     ticket = Ticket(
         user_id=current_user.id,
         subject=data.subject,
@@ -156,9 +161,11 @@ def create_ticket(
         category=triage["category"],
         urgency=triage["urgency"],
     )
+
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+
     return ticket
 
 
@@ -168,6 +175,8 @@ def list_tickets(
     db: Session = Depends(get_db),
 ):
     query = db.query(Ticket)
+    # Regular users can only see tickets belonging to their own account.
+    # Admins can view tickets from all users.
     if current_user.role != "admin":
         query = query.filter(Ticket.user_id == current_user.id)
 

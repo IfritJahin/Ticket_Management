@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function Login({ onLogin, loading, notice, setNotice }) {
+function Login({ onLogin, loading, notice, setNotice, goToRegister }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -47,6 +47,17 @@ function Login({ onLogin, loading, notice, setNotice }) {
         </form>
 
         {notice && <p className="notice">{notice}</p>}
+
+        <p className="switch">
+          New here?{' '}
+          <button
+            type="button"
+            className="link"
+            onClick={goToRegister}
+          >
+            Create an account
+          </button>
+        </p>
       </section>
     </main>
   )

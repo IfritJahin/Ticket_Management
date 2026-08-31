@@ -1,177 +1,198 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+    BrowserRouter,
+    Routes,
+    Route,
+    Navigate,
+    useNavigate,
+} from 'react-router-dom'
+
 import './App.css'
-import Register from './components/Register'
+
 import Login from './components/Login'
+import Register from './components/Register'
 import Tickets from './components/Ticket'
+import { getMe, getTickets, login, register } from './api'
+
+function AppContent() {
+    const [token, setToken] = useState(
+        localStorage.getItem('ticket_token') || ''
+    )
+
+    const [user, setUser] = useState(null)
+    const [tickets, setTickets] = useState([])
+
+    const [notice, setNotice] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    const navigate = useNavigate()
 
 
+    // Check logged-in user
+    useEffect(() => {
+        if (!token) {
+            return
+        }
 
-const API_URL = 'http://localhost:8000'
+        getMe(token)
+            .then((profile) => {
+                setUser(profile)
 
-function App() {
-  const [token, setToken] = useState(
-    localStorage.getItem('ticket_token') || ''
-  )
+                return getTickets(token)
+            })
+            .then((data) => {
+                setTickets(data)
+            })
+            .catch(() => {
+                localStorage.removeItem('ticket_token')
+                setToken('')
+                setUser(null)
+                setTickets([])
+                navigate('/login')
+            })
+    }, [token, navigate])
 
-  const [page, setPage] = useState('login')
 
-  const [user, setUser] = useState(null)
-  const [tickets, setTickets] = useState([])
+    // Login
+    const handleLogin = async (credentials) => {
+        setLoading(true)
+        setNotice('')
 
-  const [notice, setNotice] = useState('')
-  const [loading, setLoading] = useState(false)
+        try {
+            const result = await login(credentials)
 
-  const api = useCallback(
-    async (path, options = {}) => {
-      const response = await fetch(`${API_URL}${path}`, {
-        ...options,
+            localStorage.setItem(
+                'ticket_token',
+                result.access_token
+            )
 
-        headers: {
-          'Content-Type': 'application/json',
+            setToken(result.access_token)
 
-          ...(token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : {}),
-
-          ...options.headers,
-        },
-      })
-
-      const body = await response.json()
-
-      if (!response.ok) {
-        throw new Error(
-          body.detail || 'Something went wrong'
-        )
-      }
-
-      return body
-    },
-    [token]
-  )
-
-  const loadTickets = useCallback(async () => {
-    try {
-      const data = await api('/api/tickets')
-      setTickets(data)
-    } catch (error) {
-      setNotice(error.message)
+            navigate('/tickets')
+        } catch (error) {
+            setNotice(error.message)
+        } finally {
+            setLoading(false)
+        }
     }
-  }, [api])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('ticket_token')
 
-    setToken('')
-    setUser(null)
-    setTickets([])
-    setPage('login')
-  }, [])
+    // Register
+    const handleRegister = async (data) => {
+        setLoading(true)
+        setNotice('')
 
-  // Check logged-in user
-  useEffect(() => {
-    if (!token) return
+        try {
+            await register(data)
 
-    api('/api/auth/me')
-      .then((profile) => {
-        setUser(profile)
-        loadTickets()
-      })
-      .catch(() => {
-        logout()
-      })
-  }, [token, api, loadTickets, logout])
+            setNotice(
+                'Account created. Please sign in.'
+            )
 
-  // Login
-  const handleLogin = async (credentials) => {
-    setLoading(true)
-    setNotice('')
-
-    try {
-      const result = await api('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      })
-
-      localStorage.setItem(
-        'ticket_token',
-        result.access_token
-      )
-
-      setToken(result.access_token)
-    } catch (error) {
-      setNotice(error.message)
-    } finally {
-      setLoading(false)
+            navigate('/login')
+        } catch (error) {
+            setNotice(error.message)
+        } finally {
+            setLoading(false)
+        }
     }
-  }
 
-  // Register
-  const handleRegister = async (data) => {
-    setLoading(true)
-    setNotice('')
 
-    try {
-      await api('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
+    // Logout
+    const logout = () => {
+        localStorage.removeItem('ticket_token')
 
-      setNotice(
-        'Account created. Please sign in.'
-      )
+        setToken('')
+        setUser(null)
+        setTickets([])
 
-      setPage('login')
-    } catch (error) {
-      setNotice(error.message)
-    } finally {
-      setLoading(false)
+        navigate('/login')
     }
-  }
 
-  // Not logged in
-  if (!token || !user) {
-    if (page === 'register') {
-      return (
-        <Register
-          onRegister={handleRegister}
-          loading={loading}
-          notice={notice}
-          setNotice={setNotice}
-          goToLogin={() => {
-            setNotice('')
-            setPage('login')
-          }}
-        />
-      )
-    }
 
     return (
-      <Login
-        onLogin={handleLogin}
-        loading={loading}
-        notice={notice}
-        setNotice={setNotice}
-      />
-    )
-  }
+        <Routes>
 
-  // Logged in
-  return (
-    <Tickets
-      user={user}
-      tickets={tickets}
-      loading={loading}
-      setLoading={setLoading}
-      notice={notice}
-      setNotice={setNotice}
-      loadTickets={loadTickets}
-      api={api}
-      logout={logout}
-    />
-  )
+            <Route
+                path="/login"
+                element={
+                    <Login
+                        onLogin={handleLogin}
+                        loading={loading}
+                        notice={notice}
+                        setNotice={setNotice}
+                        goToRegister={() => {
+                            setNotice('')
+                            navigate('/register')
+                        }}
+                    />
+                }
+            />
+
+            <Route
+                path="/register"
+                element={
+                    <Register
+                        onRegister={handleRegister}
+                        loading={loading}
+                        notice={notice}
+                        setNotice={setNotice}
+                        goToLogin={() => {
+                            setNotice('')
+                            navigate('/login')
+                        }}
+                    />
+                }
+            />
+
+            <Route
+                path="/tickets"
+                element={
+                    token && user ? (
+                        <Tickets
+                            user={user}
+                            tickets={tickets}
+                            loading={loading}
+                            setLoading={setLoading}
+                            notice={notice}
+                            setNotice={setNotice}
+                            loadTickets={() =>
+                                getTickets(token).then(setTickets)
+                            }
+                            token={token}
+                            logout={logout}
+                        />
+                    ) : (
+                        <Navigate to="/login" />
+                    )
+                }
+            />
+
+            <Route
+                path="*"
+                element={
+                    <Navigate
+                        to={
+                            token && user
+                                ? '/tickets'
+                                : '/login'
+                        }
+                    />
+                }
+            />
+
+        </Routes>
+    )
 }
+
+
+function App() {
+    return (
+        <BrowserRouter>
+            <AppContent />
+        </BrowserRouter>
+    )
+}
+
 
 export default App

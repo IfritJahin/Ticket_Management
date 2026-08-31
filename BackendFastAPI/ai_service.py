@@ -1,77 +1,83 @@
+import os
+
+from dotenv import load_dotenv
+from google import genai
+from pydantic import BaseModel
+from typing import Literal
+
+
+load_dotenv()
+
+
+class TicketTriage(BaseModel):
+    category: Literal[
+        "billing",
+        "account",
+        "technical",
+        "feature_request",
+        "general",
+    ]
+
+    urgency: Literal[
+        "low",
+        "medium",
+        "high",
+    ]
+
+
+api_key = os.getenv("GEMINI_API_KEY")
+
+if not api_key:
+    raise RuntimeError("GEMINI_API_KEY is not configured")
+
+
+client = genai.Client(api_key=api_key)
+
 
 def categorize_ticket(subject: str, message: str):
-    """
-    Mock AI/LLM ticket classifier.
 
-    In a real application, this function could call an LLM API.
-    For this assignment, a mocked classifier is acceptable.
-    """
+    prompt = f"""
+        You are a support ticket classifier.
 
-    text = f"{subject} {message}".lower()
+        Classify this support ticket.
 
-    # Category classification
-    if any(word in text for word in [
-        "payment",
-        "billing",
-        "invoice",
-        "charge",
-        "refund",
-        "subscription",
-    ]):
-        category = "billing"
+        Allowed categories:
+        - billing
+        - account
+        - technical
+        - feature_request
+        - general
 
-    elif any(word in text for word in [
-        "login",
-        "password",
-        "account",
-        "sign in",
-        "signup",
-    ]):
-        category = "account"
+        Allowed urgency:
+        - low
+        - medium
+        - high
 
-    elif any(word in text for word in [
-        "error",
-        "bug",
-        "crash",
-        "not working",
-        "broken",
-        "failed",
-    ]):
-        category = "technical"
+        Subject:
+        {subject}
 
-    elif any(word in text for word in [
-        "feature",
-        "request",
-        "suggestion",
-    ]):
-        category = "feature_request"
+        Message:
+        {message}
 
-    else:
-        category = "general"
+        Choose the most appropriate category and urgency.
+        """
+    # Use Gemini to classify the ticket instead of relying on
+    # hard-coded keyword rules. Structured output ensures the
+    # response contains only our allowed category and urgency values.
 
-    # Urgency classification
-    if any(word in text for word in [
-        "urgent",
-        "critical",
-        "emergency",
-        "down",
-        "blocked",
-        "cannot access",
-    ]):
-        urgency = "high"
 
-    elif any(word in text for word in [
-        "soon",
-        "important",
-        "issue",
-        "problem",
-    ]):
-        urgency = "medium"
+    response = client.models.generate_content(
+        model="gemini-3.5-flash-lite",
+        contents=prompt,
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": TicketTriage,
+        },
+    )
 
-    else:
-        urgency = "low"
+    result = response.parsed
 
     return {
-        "category": category,
-        "urgency": urgency,
+        "category": result.category,
+        "urgency": result.urgency,
     }

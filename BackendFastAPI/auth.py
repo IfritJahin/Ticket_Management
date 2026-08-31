@@ -1,22 +1,31 @@
+import os
+
+from dotenv import load_dotenv
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
-# from fastapi.security import OAuth2PasswordBearer
-from jose import jwt , JWTError
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from database import get_db 
+from database import get_db
 from models import User
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+load_dotenv()
+
 security = HTTPBearer()
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
-SECRET_KEY = "your-secret-key-change-this-later"
+
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY is not configured")
+
 ALGORITHM = "HS256"
 
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
