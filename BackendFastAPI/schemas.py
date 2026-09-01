@@ -1,17 +1,17 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RegisterRequest(BaseModel):
-    name: str
-    email: str
-    password: str
+    name: str = Field(min_length=1, max_length=100)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=128)
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
 
 class UserResponse(BaseModel):
     id: int
@@ -24,14 +24,14 @@ class UserResponse(BaseModel):
 
 
 class TicketCreate(BaseModel):
-    subject: str
-    message: str
+    subject: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=5_000)
     category: str | None = None
     urgency: str | None = None
 
 
 class TicketStatusUpdate(BaseModel):
-    status: str
+    status: Literal["open", "in_progress", "closed"]
 
 
 class UserRoleUpdate(BaseModel):

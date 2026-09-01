@@ -261,9 +261,33 @@ This prevents User A from accessing User B's tickets even if they manually modif
 | POST   | `/api/auth/register`              | Register a new user             |
 | POST   | `/api/auth/login`                 | Login and receive JWT           |
 | GET    | `/api/auth/me`                    | Get current authenticated user  |
+| POST   | `/api/auth/bootstrap-admin`       | One-time initial admin setup    |
+| PATCH  | `/api/users/{user_id}/role`       | Change a user's role (admin)    |
+| DELETE | `/api/users/{user_id}`            | Delete a user and their tickets (admin) |
 | GET    | `/api/tickets`                    | Get tickets based on user role  |
 | POST   | `/api/tickets`                    | Create and AI-classify a ticket |
 | PATCH  | `/api/tickets/{ticket_id}/status` | Update ticket status            |
+
+All endpoints except registration, login, and initial admin setup require an
+`Authorization: Bearer <JWT>` header. The role and delete endpoints require an
+admin JWT. Ticket status must be `open`, `in_progress`, or `closed`.
+
+### Initial Admin Setup
+
+After registering an account, the account can be promoted to admin using:
+
+POST /api/auth/bootstrap-admin
+
+The endpoint can only be used while no admin account exists. It accepts the
+email address of an existing registered user.
+
+Request:
+
+```json
+{
+  "email": "admin@example.com"
+}
+```
 
 ### Create Ticket
 

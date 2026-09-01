@@ -25,16 +25,15 @@ class TicketTriage(BaseModel):
     ]
 
 
-api_key = os.getenv("GEMINI_API_KEY")
-
-if not api_key:
-    raise RuntimeError("GEMINI_API_KEY is not configured")
-
-
-client = genai.Client(api_key=api_key)
+class AIServiceError(Exception):
+    """Raised when ticket triage cannot be completed by Gemini."""
 
 
 def categorize_ticket(subject: str, message: str):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise AIServiceError("Gemini is not configured")
+
 
     prompt = f"""
         You are a support ticket classifier.
@@ -66,16 +65,19 @@ def categorize_ticket(subject: str, message: str):
     # response contains only our allowed category and urgency values.
 
 
-    response = client.models.generate_content(
-        model="gemini-3.5-flash-lite",
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": TicketTriage,
-        },
-    )
-
-    result = response.parsed
+    try:
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": TicketTriage,
+            },
+        )
+        result = TicketTriage.model_validate(response.parsed)
+    except Exception as exc:
+        raise AIServiceError("Ticket categorization is temporarily unavailable") from exc
 
     return {
         "category": result.category,

@@ -15,7 +15,7 @@ from schemas import (
     BootstrapAdminRequest,
 )
 from auth import hash_password, verify_password, create_access_token
-from ai_service import categorize_ticket
+from ai_service import AIServiceError, categorize_ticket
 # from fastapi.security import OAuth2PasswordRequestForm
 
 Base.metadata.create_all(bind=engine)
@@ -162,7 +162,10 @@ def create_ticket(
             )
 
     # AI automatically categorizes the new ticket.
-    triage = categorize_ticket(data.subject, data.message)
+    try:
+        triage = categorize_ticket(data.subject, data.message)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     # print("SUBJECT:", data.subject)
     # print("MESSAGE:", data.message)

@@ -66,8 +66,15 @@ function AppContent() {
                 result.access_token
             )
 
-            setToken(result.access_token)
+            // The tickets route requires both a token and a user. Load the
+            // profile before navigating so the route guard does not send a
+            // newly signed-in user back to the login page.
+            const profile = await getMe(result.access_token)
+            const ticketData = await getTickets(result.access_token)
 
+            setUser(profile)
+            setTickets(ticketData)
+            setToken(result.access_token)
             navigate('/tickets')
         } catch (error) {
             setNotice(error.message)
